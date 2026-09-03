@@ -1,0 +1,34 @@
+
+--- Module:   ..\..\TEMP\Source\TEMP.c (C)
+..\..\TEMP\Source\TEMP.c  79  note 9034: cannot assign 'signed8' to different 
+    essential type 'float32' [MISRA 2012 Rule 10.3, required]
+static float32 TEMP_M_phyTemp = 0;
+                                ^
+..\..\TEMP\Source\TEMP.c  123  note 9029: an unsigned value and a signed value 
+    cannot be used together as operands to < [MISRA 2012 Rule 10.4, required]
+    for(x = 0u; x < 2; x++)
+                ~ ^ ~
+..\..\TEMP\Source\TEMP.c  251  info 734: loss of precision (assignment) from 16 
+    bits to 15 bits
+    TEMP_M_rawTempSValue = l_tempraw / SENSOR_DATA_SHIFT;
+                         ^
+..\..\TEMP\Source\TEMP.c  251  note 9034: cannot assign 'signed32' to narrower 
+    essential type 'signed16' [MISRA 2012 Rule 10.3, required]
+    TEMP_M_rawTempSValue = l_tempraw / SENSOR_DATA_SHIFT;
+                           ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+..\..\TEMP\Source\TEMP.c  251  note 9029: an unsigned value and a signed value 
+    cannot be used together as operands to / [MISRA 2012 Rule 10.4, required]
+    TEMP_M_rawTempSValue = l_tempraw / SENSOR_DATA_SHIFT;
+                           ~~~~~~~~~ ^ ~~~~~~~~~~~~~~~~~
+..\..\TEMP\Source\TEMP.c  254  note 9029: a signed value and a floating point 
+    value cannot be used together as operands to * [MISRA 2012 Rule 10.4, 
+    required]
+    TEMP_M_phyTemp = TEMP_M_rawTempSValue * SENSOR_DATA_RESOLUTION;    
+                     ~~~~~~~~~~~~~~~~~~~~ ^ ~~~~~~~~~~~~~~~~~~~~~~
+--- Module Wrap-up
+--- Global Wrap-up
+
+--- Module:   ..\..\TEMP\Source\TEMP.c (C)
+note 900: execution completed producing 6 primary and 0 supplemental messages 
+    (6 total) after processing 1 module
+Report run on SVN Revision:  10344 with pclint plus version 2.0  
