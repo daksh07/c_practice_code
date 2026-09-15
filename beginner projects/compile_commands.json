@@ -1,0 +1,22 @@
+[
+  {
+    "file": "simple_game.c",
+    "arguments": [
+      "/usr/bin/gcc",
+      "simple_game.c",
+      "-o",
+      "simple_game",
+      "-I/opt/homebrew/include",
+      "-arch",
+      "arm64",
+      "-framework",
+      "-framework",
+      "-framework",
+      "-framework",
+      "-arch",
+      "arm64"
+    ],
+    "directory": "/Users/dakshjindal/Library/Mobile Documents/com~apple~CloudDocs/Code/c_practice_code",
+    "output": "simple_game"
+  }
+]
