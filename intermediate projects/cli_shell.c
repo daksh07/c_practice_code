@@ -1,3 +1,16 @@
+/*SUMMARY
+First we took a line string using terminal
+then we looked for location of \n (Enter) in the string using strcspn (character search position)
+we replaced that with null "\0"
+then we sliced the line into different words
+we used strtok (tokens = slices) to look for empty space " " and slice the string around that space
+after slicing the string we saved a pointer to every word into argv 
+then we forked a child process to run the command in stored in argv[0] along with arguments in argv[i]
+in the child process (pid == 0) we then called execvp to execute the command and arguements
+catching errors at every valid point from creating a fork to execvp
+while the parent process waited for child process to finish using waitpid
+*/
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
