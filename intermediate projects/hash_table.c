@@ -115,7 +115,7 @@ bool ht_remove(hash_table_t *ht, const char *key) {
     if (strcmp(n->key, key) == 0) {
       if (prev_node == NULL){
         ht->buckets[index] = n->next;
-      } else{
+      } else {
         prev_node->next = n->next;
       }
       free(n->key);
@@ -126,7 +126,6 @@ bool ht_remove(hash_table_t *ht, const char *key) {
 //      print_hash_table(ht);
       return true;
     }
-    prev_node = n;
   }
   return false;
 }
