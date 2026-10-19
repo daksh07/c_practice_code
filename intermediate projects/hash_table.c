@@ -20,14 +20,18 @@ typedef struct {
 } hash_table_t;
 
 void ht_destroy(hash_table_t *ht) {
-  for (uint8_t i = 0; i < ht->capacity; i++) {
-    for (hash_node_t *n = ht->buckets[i]; n != NULL; n = n->next) {
+  hash_node_t *next_node = NULL;
+  for (size_t i = 0; i < ht->capacity; i++) {
+    for (hash_node_t *n = ht->buckets[i]; n != NULL; n = next_node) {
+      next_node = n->next;
       free(n->key);
       free(n);
     }
   }
   free(ht->buckets);
   ht->capacity = 0;
+  ht->count = 0;
+  ht->buckets = NULL;
 }
 
 // Hash function (djb2) — already implemented for you.
@@ -46,7 +50,7 @@ void print_hash_table(hash_table_t *ht) {
   } else {
     printf("Bucket size: %lu\n", ht->count);
     printf("key : value\n");
-    for (uint8_t i = 0; i < ht->capacity; i++) {
+    for (size_t i = 0; i < ht->capacity; i++) {
       for (hash_node_t *node = ht->buckets[i]; node != NULL;
            node = node->next) {
         printf("%s : %s\n", node->key, (char *)node->value);
@@ -86,7 +90,7 @@ bool ht_insert(hash_table_t *ht, const char *key, void *value) {
   hash_node_t *node = malloc(sizeof(hash_node_t));
   if (node == NULL)
     return false;
-  node->key = malloc(sizeof(key + 1));
+  node->key = malloc(strlen(key) + 1);
   if (node->key == NULL) {
     free(node);
     return false;
@@ -104,13 +108,10 @@ void *ht_get(hash_table_t *ht, const char *key) {
   // TODO: compute the bucket index the same way as ht_insert.
   // TODO: walk that bucket's chain comparing keys (strcmp, not ==).
   // TODO: return the value if found, NULL otherwise.
-  hash_node_t *node_entry = *(ht->buckets);
-  for (uint8_t i = 0; i < ht->capacity; ht++) {
-    if (strcmp(node_entry->key, key) == 0) {
-      printf("Entry found!\n");
-      printf("key: %s\n", node_entry->key);
-      printf("value: %s\n", (char *)node_entry->value);
-      return node_entry->value;
+  size_t index = hash_string(key) % ht->capacity;
+  for (hash_node_t *n = ht->buckets[index]; n != NULL; n = n->next) {
+    if (strcmp(n->key, key) == 0) {
+      return n->value;
     }
   }
   return NULL;
@@ -147,12 +148,16 @@ int main(void) {
   ht_init(&ht, INITIAL_CAPACITY);
   char *key[] = {"rohan", "krishna", "city"};
   char *value[] = {"engineer", "student", "delhi"};
-  for (uint8_t i = 0; i < 3; i++) {
+  for (size_t i = 0; i < 3; i++) {
     ht_insert(&ht, key[i], (void *)value[i]);
   }
   print_hash_table(&ht);
   ht_remove(&ht, "rohan");
   print_hash_table(&ht);
+  char *get_val = ht_get(&ht, "city");
+  printf("%s\n", get_val != NULL ? get_val : "Value not found");
+  get_val = ht_get(&ht, "dob");
+  printf("%s\n", get_val != NULL ? get_val : "DOB not found");
   ht_destroy(&ht);
   print_hash_table(&ht);
   return 0;
