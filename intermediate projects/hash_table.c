@@ -19,7 +19,16 @@ typedef struct {
   size_t count;
 } hash_table_t;
 
-void ht_destroy(hash_table_t *ht);
+void ht_destroy(hash_table_t *ht) {
+  for (uint8_t i = 0; i < ht->capacity; i++) {
+    for (hash_node_t *n = ht->buckets[i]; n != NULL; n = n->next) {
+      free(n->key);
+      free(n);
+    }
+  }
+  free(ht->buckets);
+  ht->capacity = 0;
+}
 
 // Hash function (djb2) — already implemented for you.
 static unsigned long hash_string(const char *key) {
@@ -32,11 +41,16 @@ static unsigned long hash_string(const char *key) {
 }
 
 void print_hash_table(hash_table_t *ht) {
-  printf("Bucket size: %lu\n", ht->count);
-  printf("key : value\n");
-  for (uint8_t i = 0; i < ht->capacity; i++) {
-    for (hash_node_t *node = ht->buckets[i]; node != NULL; node = node->next) {
-      printf("%s : %s\n", node->key, (char *)node->value);
+  if (ht->capacity == 0) {
+    printf("Err! Hash table is empty.\n");
+  } else {
+    printf("Bucket size: %lu\n", ht->count);
+    printf("key : value\n");
+    for (uint8_t i = 0; i < ht->capacity; i++) {
+      for (hash_node_t *node = ht->buckets[i]; node != NULL;
+           node = node->next) {
+        printf("%s : %s\n", node->key, (char *)node->value);
+      }
     }
   }
 }
@@ -110,29 +124,21 @@ bool ht_remove(hash_table_t *ht, const char *key) {
   // Decide: should this also free `value`? Who owns that memory?
   // TODO: decrement ht->count, return true/false.
   size_t index = hash_string(key) % ht->capacity;
-  for (hash_node_t *n = ht->buckets[index]; n != NULL; n = n->next) {
-    /*    if (strcmp(n->next->key, key)) {
-          printf("Checking next ref...\n");
-          n->next = n->next->next;
-        }*/
-    if (strcmp(n->key, key) == 0) {
+  hash_node_t *prev = NULL;
+  for (hash_node_t *n = ht->buckets[index]; n != NULL; prev = n, n = n->next) {
+    if (strcmp(key, n->key) == 0) {
+      if (prev == NULL) {
+        ht->buckets[index] = n->next;
+      } else {
+        prev->next = n->next;
+      }
       free(n->key);
-      free(n->next);
+      free(n);
       ht->count--;
-      printf("Entry deleted.\n");
-      printf("Bucket size after del: %lu\n", ht->count);
-      print_hash_table(ht);
       return true;
     }
   }
   return false;
-}
-
-void ht_destroy(hash_table_t *ht) {
-  // TODO: walk every bucket, freeing every node's chain (duplicated
-  // key + node itself — same use-after-free trap as list_destroy).
-  // TODO: free ht->buckets.
-  // TODO: reset capacity/count.
 }
 
 int main(void) {
@@ -145,5 +151,8 @@ int main(void) {
   }
   print_hash_table(&ht);
   ht_remove(&ht, "rohan");
+  print_hash_table(&ht);
+  ht_destroy(&ht);
+  print_hash_table(&ht);
   return 0;
 }
