@@ -151,13 +151,9 @@ int main(void) {
     ht_insert(&ht, key[i], (void *)value[i]);
   }
   print_hash_table(&ht);
-<<<<<<< HEAD
   ht_remove(&ht, "rohan");
   print_hash_table(&ht);
   ht_destroy(&ht);
-=======
-  ht_remove(&ht, "city");
->>>>>>> 5546a49aa208f6ab8e2615b92a79f51f52451b6a
   print_hash_table(&ht);
   return 0;
 }
