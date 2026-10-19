@@ -124,13 +124,14 @@ bool ht_remove(hash_table_t *ht, const char *key) {
   // Decide: should this also free `value`? Who owns that memory?
   // TODO: decrement ht->count, return true/false.
   size_t index = hash_string(key) % ht->capacity;
-  hash_node_t *prev = NULL;
-  for (hash_node_t *n = ht->buckets[index]; n != NULL; prev = n, n = n->next) {
-    if (strcmp(key, n->key) == 0) {
-      if (prev == NULL) {
+  hash_node_t *prev_node = NULL;
+  for (hash_node_t *n = ht->buckets[index]; n != NULL;
+       prev_node = n, n = n->next) {
+    if (strcmp(n->key, key) == 0) {
+      if (prev_node == NULL) {
         ht->buckets[index] = n->next;
       } else {
-        prev->next = n->next;
+        prev_node->next = n->next;
       }
       free(n->key);
       free(n);
@@ -150,9 +151,13 @@ int main(void) {
     ht_insert(&ht, key[i], (void *)value[i]);
   }
   print_hash_table(&ht);
+<<<<<<< HEAD
   ht_remove(&ht, "rohan");
   print_hash_table(&ht);
   ht_destroy(&ht);
+=======
+  ht_remove(&ht, "city");
+>>>>>>> 5546a49aa208f6ab8e2615b92a79f51f52451b6a
   print_hash_table(&ht);
   return 0;
 }
