@@ -38,6 +38,11 @@ typedef struct {
   size_t count;
 } hash_table_t;
 
+
+void ht_init(hash_table_t *ht, size_t capacity);
+bool ht_insert(hash_table_t *ht, const char *key, void *value);
+void ht_destroy(hash_table_t *ht);
+
 static unsigned long hash_string(const char *key) {
   unsigned long hash = 5381;
   int c;
@@ -55,13 +60,30 @@ void ht_init(hash_table_t *ht, size_t capacity) {
 
 // Move every node into a bucket array of new_capacity buckets.
 bool ht_resize(hash_table_t *ht, size_t new_capacity) {
-  // TODO: allocate the new bucket array (all slots NULL). If that fails, or
-  // new_capacity is 0, return false without touching the table.
-  // TODO: walk every old chain and re-link each node into the new array. The
-  // bucket index depends on the capacity, so work it out again.
-  // TODO: free the old bucket array, switch ht to the new one, update the
-  // capacity. count does not change.
-  return false;
+  // Allocate the new bucket array (all slots NULL). On failure, or a
+  // capacity of 0, leave the table exactly as it was.
+  // Walk every old chain and re-link each node into the new array. The
+  // bucket index depends on the capacity, so it is recomputed per node.
+  // Swap in the new array. count does not change.
+  if (new_capacity == 0) return false;
+  hash_node_t **new_buckets = calloc(new_capacity, sizeof(*new_buckets));
+  if (new_buckets == NULL) return false;
+
+  for (size_t i = 0; i < ht->capacity; i++){
+    hash_node_t *n = ht->buckets[i];
+    while(n != NULL){
+      hash_node_t *next = n->next;
+      size_t index = hash_string(n->key) % new_capacity;
+      n->next = new_buckets[index];
+      new_buckets[index] = n;
+      n = next;
+    }
+  }
+
+  free(ht->buckets);
+  ht->buckets = new_buckets;
+  ht->capacity = new_capacity;
+  return true;
 }
 
 bool ht_insert(hash_table_t *ht, const char *key, void *value) {
@@ -87,6 +109,9 @@ bool ht_insert(hash_table_t *ht, const char *key, void *value) {
 
   // TODO: if the table is now too full, double its capacity. If the resize
   // fails the new entry is still stored, so this function still returns true.
+  if (ht->count * 4 > ht->capacity * 3){
+    ht_resize(ht, ht->capacity * 2);
+  }
   return true;
 }
 
