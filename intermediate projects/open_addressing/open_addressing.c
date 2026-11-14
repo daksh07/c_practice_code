@@ -84,26 +84,44 @@ oa_status_t oa_insert(oa_table_t *t, const char *key, void *value) {
   // TODO: probe from the home slot, looking at no more than `capacity` slots.
   // TODO: update the value if the key is already in the table.
   // TODO: otherwise store a copy of the key in the best free slot.
-  if(t->count >= t->capacity) return OA_ERR_FULL;
+  if (t->capacity <= 0) return OA_ERR_FULL;
   size_t index = hash_string(key) % t->capacity;
+  size_t index_count = index;
   for (size_t i = 0; i < t->capacity; i++){
-    if(t->slots[index].state == SLOT_OCCUPIED){
-      if (strcmp(t->slots[index].key, key) == 0){
-        t->slots[index].value = value;
+    if (t->slots[index_count].state == SLOT_OCCUPIED){
+      if (strcmp(t->slots[index_count].key,key) == 0){
+        t->slots[index_count].value = value;
         return OA_OK;
-      } else {
-          index = (index + 1) % t->capacity;
       }
     }
-    if(t->slots[index].state == SLOT_EMPTY || t->slots[index].state == SLOT_TOMBSTONE){
-      char *new_key = malloc(sizeof(char)*(strlen(key) + 1));
-      strcpy(new_key, key);
-      t->slots[index].key = new_key;
-      t->slots[index].value = value;
-      t->slots[index].state = SLOT_OCCUPIED;
+    if (t->slots[index_count].state == SLOT_EMPTY){
+      char *new_key = malloc(sizeof(char) * (strlen(key) + 1));
+      if (new_key == NULL) return OA_ERR_NOMEM;
+      t->slots[index_count].key = new_key;
+      strcpy(t->slots[index_count].key, key);
+      //printf("Key at index %d is %s\n",index_count,t->slots[index_count].key);
+      t->slots[index_count].value = value;
+      t->slots[index_count].state = SLOT_OCCUPIED;
+      t->count++;
+      return OA_OK; 
+    }
+    index_count = (index_count + 1) % t->capacity;
+  }
+  index_count = index;
+  //printf("Calculated index for %s is %d\n",key, index);
+  for (size_t j = 0; j < t->capacity; j++){
+    if (t->slots[index_count].state == SLOT_TOMBSTONE){
+      char *new_key = malloc(sizeof(char) * (strlen(key) + 1));
+      if (new_key == NULL) return OA_ERR_NOMEM;
+      t->slots[index_count].key = new_key;
+      strcpy(t->slots[index_count].key, key);
+      //printf("Key at index %d is %s\n",index_count,t->slots[index_count].key);
+      t->slots[index_count].value = value;
+      t->slots[index_count].state = SLOT_OCCUPIED;
       t->count++;
       return OA_OK;
     }
+    index_count = (index_count + 1) % t->capacity;
   }
   return OA_ERR_FULL;
 }
@@ -119,7 +137,6 @@ void *oa_get(oa_table_t *t, const char *key) {
     index = (index + 1) % t->capacity;
     count++;
   }
-  (void)t; (void)key;
   return NULL;
 }
 
@@ -163,13 +180,13 @@ int main(void) {
   int values[] = {1, 2, 3, 4, 5, 6};
   for (int i = 0; i < 6; i++) oa_insert(&t, names[i], &values[i]);
   printf("count after 6 inserts: %zu\n", t.count);
-
+  printf("key at slot 0: %s\n",t.slots[0].key);
   for (int i = 0; i < 6; i++) {
     int *v = oa_get(&t, names[i]);
     printf("%-8s home %zu -> %s\n", names[i], hash_string(names[i]) % t.capacity,
            v ? "found" : "MISSING");
   }
-  oa_remove(&t, "blue");
+  //oa_remove(&t, "blue");
   printf("blue after remove: %s\n", oa_get(&t, "blue") ? "found" : "gone");
   printf("count after remove: %zu\n", t.count);
 
