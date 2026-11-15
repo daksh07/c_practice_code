@@ -84,55 +84,62 @@ oa_status_t oa_insert(oa_table_t *t, const char *key, void *value) {
   // TODO: probe from the home slot, looking at no more than `capacity` slots.
   // TODO: update the value if the key is already in the table.
   // TODO: otherwise store a copy of the key in the best free slot.
-  if (t->capacity <= 0) return OA_ERR_FULL;
+  /*
+   * Using the while loop we are going through the table
+   * Starting from the calculated probing index
+   * if we find an OCCUPIED slot with the same key, we update the value
+   * else when we find the first tombstone we capture it's index
+   * after going through the whole table
+   * if there is no tombstone but there is an empty slot we write to that slot
+   * else we write to the tombstone
+   * if the count = capacity and there is no tombstone we return table full
+   * */
+  if (t->capacity == 0) return OA_ERR_FULL;
   size_t index = hash_string(key) % t->capacity;
   size_t index_count = index;
-  for (size_t i = 0; i < t->capacity; i++){
+  size_t count = 0;
+  size_t tsn_idx = t->capacity;
+  while (t->slots[index_count].state != SLOT_EMPTY && count < t->capacity){
     if (t->slots[index_count].state == SLOT_OCCUPIED){
-      if (strcmp(t->slots[index_count].key,key) == 0){
+      if (strcmp(t->slots[index_count].key, key) == 0){
         t->slots[index_count].value = value;
         return OA_OK;
       }
     }
-    if (t->slots[index_count].state == SLOT_EMPTY){
-      char *new_key = malloc(sizeof(char) * (strlen(key) + 1));
-      if (new_key == NULL) return OA_ERR_NOMEM;
-      t->slots[index_count].key = new_key;
-      strcpy(t->slots[index_count].key, key);
-      //printf("Key at index %d is %s\n",index_count,t->slots[index_count].key);
-      t->slots[index_count].value = value;
-      t->slots[index_count].state = SLOT_OCCUPIED;
-      t->count++;
-      return OA_OK; 
+    if (t->slots[index_count].state == SLOT_TOMBSTONE && tsn_idx == t->capacity){
+      tsn_idx = index_count;
     }
     index_count = (index_count + 1) % t->capacity;
+    count++;
   }
-  index_count = index;
-  //printf("Calculated index for %s is %d\n",key, index);
-  for (size_t j = 0; j < t->capacity; j++){
-    if (t->slots[index_count].state == SLOT_TOMBSTONE){
-      char *new_key = malloc(sizeof(char) * (strlen(key) + 1));
-      if (new_key == NULL) return OA_ERR_NOMEM;
-      t->slots[index_count].key = new_key;
-      strcpy(t->slots[index_count].key, key);
-      //printf("Key at index %d is %s\n",index_count,t->slots[index_count].key);
-      t->slots[index_count].value = value;
-      t->slots[index_count].state = SLOT_OCCUPIED;
-      t->count++;
-      return OA_OK;
-    }
-    index_count = (index_count + 1) % t->capacity;
+  if (count == t->capacity && tsn_idx == t->capacity) return OA_ERR_FULL;
+  if (t->slots[index_count].state == SLOT_EMPTY && tsn_idx == t->capacity){
+    tsn_idx = index_count;
   }
-  return OA_ERR_FULL;
+  char *new_key = malloc(sizeof(char) * (strlen(key) + 1));
+  if (new_key == NULL) return OA_ERR_NOMEM;
+  t->slots[tsn_idx].key = new_key;
+  strcpy(t->slots[tsn_idx].key, key);
+  t->slots[tsn_idx].value = value;
+  t->slots[tsn_idx].state = SLOT_OCCUPIED;
+  t->count++;
+  return OA_OK;
 }
 
+/*
+ * Goes through the table
+ * Looks for occupied slot, if key matches returns the value
+ * */
 void *oa_get(oa_table_t *t, const char *key) {
   // TODO: probe from the home slot. Return NULL if the key is not there.
+  if (t->capacity == 0) return NULL;
   size_t index = hash_string(key) % t->capacity;
   size_t count = 0;
-  while(t->slots[index].state != SLOT_EMPTY || count < t->count){
-    if (strcmp(t->slots[index].key, key) == 0){
-      return t->slots[index].value;
+  while(t->slots[index].state != SLOT_EMPTY && count < t->capacity){
+    if (t->slots[index].state == SLOT_OCCUPIED){
+      if (strcmp(t->slots[index].key, key) == 0){
+        return t->slots[index].value;
+      }
     }
     index = (index + 1) % t->capacity;
     count++;
@@ -140,9 +147,19 @@ void *oa_get(oa_table_t *t, const char *key) {
   return NULL;
 }
 
+/*
+ * Goes through the table
+ * if the slot at index is empty returns false
+ * empty means there is nothing there and table finishes here
+ * tombstone means something was there but was deleted
+ * and the table continues after tombstone
+ * if the slot is occupied, check the key
+ * if the key matches, free the key, Nullify the key pointer
+ * decrease the count and return true
+ * */
 bool oa_remove(oa_table_t *t, const char *key) {
   // TODO: find the key, free it, and leave the slot in the right state.
-  if (key == NULL) return false;
+  if (t->capacity == 0) return false;
   size_t index = hash_string(key) % t->capacity;
   for(size_t i = 0; i < t->capacity; i++){
     if (t->slots[index].state == SLOT_EMPTY){
@@ -186,10 +203,10 @@ int main(void) {
     printf("%-8s home %zu -> %s\n", names[i], hash_string(names[i]) % t.capacity,
            v ? "found" : "MISSING");
   }
-  //oa_remove(&t, "blue");
+  oa_remove(&t, "blue");
   printf("blue after remove: %s\n", oa_get(&t, "blue") ? "found" : "gone");
   printf("count after remove: %zu\n", t.count);
 
-  //oa_destroy(&t);
+  oa_destroy(&t);
   return 0;
 }
