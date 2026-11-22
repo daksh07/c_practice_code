@@ -56,6 +56,7 @@ typedef struct {
   oa_slot_t *slots;
   size_t capacity;
   size_t count; // number of OCCUPIED slots
+  size_t tombstones;
 } oa_table_t;
 
 typedef enum {
@@ -81,9 +82,9 @@ bool oa_init(oa_table_t *t, size_t capacity) {
 }
 
 oa_status_t oa_insert(oa_table_t *t, const char *key, void *value) {
-  // TODO: probe from the home slot, looking at no more than `capacity` slots.
-  // TODO: update the value if the key is already in the table.
-  // TODO: otherwise store a copy of the key in the best free slot.
+  // TODO: if the new key reuses a tombstone slot, tombstones goes down by 1.
+  // TODO: after storing a NEW key, check the load rules and call the resize.
+  // A failed resize does not change the return value.
   /*
    * Using the while loop we are going through the table
    * Starting from the calculated probing index
@@ -158,7 +159,8 @@ void *oa_get(oa_table_t *t, const char *key) {
  * decrease the count and return true
  * */
 bool oa_remove(oa_table_t *t, const char *key) {
-  // TODO: find the key, free it, and leave the slot in the right state.
+// TODO: tombstones goes up by 1 when a slot becomes a tombstone.
+
   if (t->capacity == 0) return false;
   size_t index = hash_string(key) % t->capacity;
   for(size_t i = 0; i < t->capacity; i++){
@@ -179,7 +181,24 @@ bool oa_remove(oa_table_t *t, const char *key) {
   return false;
 }
 
+// Put an already-allocated key into a slot array. The key is NOT copied.
+// Returns false if no slot is free. Used only while rebuilding.
+static bool oa_place(oa_slot_t *slots, size_t capacity, char *key, void *value) {
+  // TODO: probe from the home slot for this capacity, store key/value/state.
+}
+
+// Rebuild the table with new_capacity slots.
+bool oa_resize(oa_table_t *t, size_t new_capacity) {
+  // TODO: return false for new_capacity == 0 or new_capacity < t->count.
+  // TODO: allocate the new slot array (all EMPTY). On failure, leave t alone.
+  // TODO: move every OCCUPIED slot into the new array with oa_place.
+  //       Tombstones and empty slots are not moved.
+  // TODO: free the old slot array, switch t to the new one, update capacity,
+  //       set tombstones to 0. count is unchanged.
+}
+
 void oa_destroy(oa_table_t *t) {
+// TODO: reset tombstones as well.
   for (size_t i = 0; i < t->capacity; i++) {
     if (t->slots[i].state == SLOT_OCCUPIED) free(t->slots[i].key);
   }
