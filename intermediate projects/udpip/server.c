@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
@@ -32,6 +33,10 @@ int main()
 
   //we receive on this socket and save the client message and address 
   int n = recvfrom(listenfd, buffer, sizeof(buffer), 0, (struct sockaddr*)&cliaddr, &len);
+  if (n < 0){
+    perror("recvfrom");
+    exit(1);
+  }
   
   //receive message from server
   buffer[n] = '\0';

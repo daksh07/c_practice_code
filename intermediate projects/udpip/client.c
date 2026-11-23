@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <strings.h>
+#include <string.h>
 #include <sys/types.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
@@ -37,7 +38,18 @@ int main()
   // request to send datagram
   // no need to specify server address in sendto
   // connect stores that peers IP and sin_port
-  sendto(sockfd, message, MAXLINE, 0, (struct sockaddr*)NULL, sizeof(servaddr));
+if (sendto(sockfd, message, strlen(message), 0, NULL, 0) < 0) {
+    perror("sendto");
+    exit(1);
+}
+
+  // receive from server
+  n = recvfrom(sockfd, buffer, sizeof(buffer)-1, 0, NULL, NULL);
+  if (n < 0){
+    perror("recvfrom");
+    exit(1);
+  }
+  buffer[n] = '\0';
   puts(buffer);
 
   // close the descriptor
